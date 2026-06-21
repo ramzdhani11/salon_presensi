@@ -20,7 +20,13 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    return await openDatabase(path, version: 2, onCreate: _createDB, onUpgrade: _upgradeDB);
+  }
+
+  Future _upgradeDB(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE presensi ADD COLUMN foto_masuk TEXT');
+    }
   }
 
   Future _createDB(Database db, int version) async {
@@ -50,6 +56,7 @@ class DatabaseHelper {
         lng_masuk REAL,
         status TEXT DEFAULT 'belum_absen',
         keterangan TEXT,
+        foto_masuk TEXT,
         FOREIGN KEY (user_id) REFERENCES users(id)
       )
     ''');
@@ -157,7 +164,7 @@ class DatabaseHelper {
     return PresensiModel.fromMap(result.first);
   }
 
-  Future<int> checkIn(int userId, double lat, double lng) async {
+  Future<int> checkIn(int userId, double lat, double lng, String fotoMasuk) async {
     final db = await database;
     final now = DateTime.now();
     final today = now.toString().substring(0, 10);
@@ -178,6 +185,7 @@ class DatabaseHelper {
           'lat_masuk': lat,
           'lng_masuk': lng,
           'status': status,
+          'foto_masuk': fotoMasuk,
         },
         where: 'id = ?',
         whereArgs: [existing.id],
@@ -191,6 +199,7 @@ class DatabaseHelper {
       'lat_masuk': lat,
       'lng_masuk': lng,
       'status': status,
+      'foto_masuk': fotoMasuk,
     });
   }
 

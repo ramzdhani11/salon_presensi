@@ -1,7 +1,7 @@
 // lib/screens/pegawai/histori_presensi.dart
 
+import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
 import '../../services/database_helper.dart';
 import '../../models/presensi_model.dart';
 
@@ -127,7 +127,28 @@ class _HistoriPresensiState extends State<HistoriPresensi> {
         padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            Icon(statusIcon, color: statusColor, size: 28),
+            if (p.fotoMasuk != null)
+              GestureDetector(
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (_) => Dialog(
+                      child: Image.file(File(p.fotoMasuk!)),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.file(
+                    File(p.fotoMasuk!),
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              )
+            else
+              Icon(statusIcon, color: statusColor, size: 28),
             const SizedBox(width: 12),
             Expanded(
               child: Column(

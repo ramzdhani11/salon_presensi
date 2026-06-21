@@ -10,6 +10,7 @@ class PresensiModel {
   final double? lngMasuk;
   final String status; // 'hadir', 'terlambat', 'belum_absen'
   final String? keterangan;
+  final String? fotoMasuk;
 
   PresensiModel({
     this.id,
@@ -21,6 +22,7 @@ class PresensiModel {
     this.lngMasuk,
     this.status = 'belum_absen',
     this.keterangan,
+    this.fotoMasuk,
   });
 
   // Hitung total jam kerja
@@ -49,6 +51,7 @@ class PresensiModel {
       'lng_masuk': lngMasuk,
       'status': status,
       'keterangan': keterangan,
+      'foto_masuk': fotoMasuk,
     };
   }
 
@@ -63,6 +66,7 @@ class PresensiModel {
       lngMasuk: map['lng_masuk'],
       status: map['status'] ?? 'belum_absen',
       keterangan: map['keterangan'],
+      fotoMasuk: map['foto_masuk'],
     );
   }
 }

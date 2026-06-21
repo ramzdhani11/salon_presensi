@@ -1,0 +1,11 @@
+# Mark JavaScript and WebAssembly files in the web directory as vendored 
+# so GitHub linguist ignores them in repository language statistics.
+web/**/*.js linguist-vendored
+web/**/*.wasm linguist-vendored
+
+# Alternatively, you can also mark them globally just to be safe
+*.js linguist-vendored
+*.wasm linguist-vendored
+
+# Explicitly set Dart as the language for .dart files
+*.dart linguist-language=Dart

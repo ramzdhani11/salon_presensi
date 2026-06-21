@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:io';
 import 'package:intl/intl.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../services/database_helper.dart';
 import '../../services/location_service.dart';
 import '../../models/presensi_model.dart';
@@ -105,8 +107,23 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
       return;
     }
 
+    // Ambil foto
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.camera,
+      preferredCameraDevice: CameraDevice.front,
+      imageQuality: 50,
+    );
+
+    if (image == null) {
+      Get.snackbar('Batal', 'Foto wajib diambil untuk check-in',
+          backgroundColor: Colors.orange, colorText: Colors.white);
+      setState(() => _isLoadingAbsen = false);
+      return;
+    }
+
     await DatabaseHelper.instance
-        .checkIn(_userId, position.latitude, position.longitude);
+        .checkIn(_userId, position.latitude, position.longitude, image.path);
     await _loadData();
     setState(() => _isLoadingAbsen = false);
 
@@ -504,10 +521,20 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
         side: BorderSide(color: Colors.grey[200]!),
       ),
       child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: statusColor.withOpacity(0.15),
-          child: Icon(Icons.calendar_today, color: statusColor, size: 18),
-        ),
+        leading: p.fotoMasuk != null
+            ? ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Image.file(
+                  File(p.fotoMasuk!),
+                  width: 40,
+                  height: 40,
+                  fit: BoxFit.cover,
+                ),
+              )
+            : CircleAvatar(
+                backgroundColor: statusColor.withOpacity(0.15),
+                child: Icon(Icons.calendar_today, color: statusColor, size: 18),
+              ),
         title: Text(p.tanggal,
             style: const TextStyle(fontWeight: FontWeight.w600)),
         subtitle: Text(

@@ -5,15 +5,16 @@ import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io';
 import 'package:intl/intl.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../services/database_helper.dart';
 import '../../services/location_service.dart';
 import '../../models/presensi_model.dart';
 import '../login_screen.dart';
 import 'histori_presensi.dart';
 import 'edit_profil_pegawai.dart';
+import 'camera_absen_screen.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:image_picker/image_picker.dart';
 
 class DashboardPegawai extends StatefulWidget {
   const DashboardPegawai({super.key});
@@ -29,6 +30,9 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
   bool _isLoadingAbsen = false;
   int _currentIndex = 0;
   
+  String? _fotoAbsenPath;
+  final ImagePicker _picker = ImagePicker();
+
   LatLng? _userLocation;
   Map<String, dynamic>? _salonLokasi;
   final MapController _mapController = MapController();
@@ -58,6 +62,23 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
       });
       // _mapController.move tidak diperlukan di sini karena MapOptions sudah menggunakan
       // initialCenter: _userLocation! yang otomatis memposisikan peta saat pertama kali dirender.
+    }
+  }
+
+  Future<void> _ambilFoto() async {
+    try {
+      final XFile? photo = await _picker.pickImage(
+        source: ImageSource.camera,
+        preferredCameraDevice: CameraDevice.front,
+      );
+      if (photo != null) {
+        setState(() {
+          _fotoAbsenPath = photo.path;
+        });
+      }
+    } catch (e) {
+      Get.snackbar('Error', 'Gagal mengambil foto: $e',
+          backgroundColor: Colors.red, colorText: Colors.white);
     }
   }
 
@@ -107,25 +128,21 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
       return;
     }
 
-    // Ambil foto
-    final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.camera,
-      preferredCameraDevice: CameraDevice.front,
-      imageQuality: 50,
-    );
-
-    if (image == null) {
-      Get.snackbar('Batal', 'Foto wajib diambil untuk check-in',
+    // Gunakan foto yang sudah diambil
+    if (_fotoAbsenPath == null) {
+      Get.snackbar('Batal', 'Foto wajah wajib diambil terlebih dahulu',
           backgroundColor: Colors.orange, colorText: Colors.white);
       setState(() => _isLoadingAbsen = false);
       return;
     }
 
     await DatabaseHelper.instance
-        .checkIn(_userId, position.latitude, position.longitude, image.path);
+        .checkIn(_userId, position.latitude, position.longitude, _fotoAbsenPath!);
     await _loadData();
-    setState(() => _isLoadingAbsen = false);
+    setState(() {
+      _isLoadingAbsen = false;
+      _fotoAbsenPath = null;
+    });
 
     Get.snackbar('Check-In Berhasil', 'Selamat bekerja, $_nama!',
         backgroundColor: Colors.green, colorText: Colors.white);
@@ -133,6 +150,15 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
 
   Future<void> _checkOut() async {
     setState(() => _isLoadingAbsen = true);
+
+    final jamSekarang = DateFormat('HH:mm').format(DateTime.now());
+    if (jamSekarang.compareTo('21:00') < 0) {
+      Get.snackbar('Belum Waktunya', 'Check-out baru dapat dilakukan mulai pukul 21:00',
+          backgroundColor: Colors.orange, colorText: Colors.white);
+      setState(() => _isLoadingAbsen = false);
+      return;
+    }
+
     await DatabaseHelper.instance.checkOut(_userId);
     await _loadData();
     setState(() => _isLoadingAbsen = false);
@@ -286,9 +312,33 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
 
     return Column(
       children: [
-        if (!sudahMasuk)
+        if (!sudahMasuk) ...[
+          if (_fotoAbsenPath != null)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              height: 120,
+              width: 100,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white, width: 2),
+                image: DecorationImage(
+                  image: FileImage(File(_fotoAbsenPath!)),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
           ElevatedButton.icon(
-            onPressed: _isLoadingAbsen ? null : _checkIn,
+            onPressed: _isLoadingAbsen ? null : _ambilFoto,
+            icon: const Icon(Icons.camera_alt),
+            label: Text(_fotoAbsenPath == null ? 'Ambil Foto' : 'Ulangi Foto', style: const TextStyle(fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _fotoAbsenPath == null ? Colors.orange : Colors.grey,
+              minimumSize: const Size(double.infinity, 45),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ElevatedButton.icon(
+            onPressed: (_isLoadingAbsen || _fotoAbsenPath == null) ? null : _checkIn,
             icon: _isLoadingAbsen
                 ? const SizedBox(
                     width: 18, height: 18,
@@ -296,7 +346,11 @@ class _DashboardPegawaiState extends State<DashboardPegawai> {
                         color: Colors.white, strokeWidth: 2))
                 : const Icon(Icons.location_on),
             label: const Text('Check-In Sekarang', style: TextStyle(fontSize: 16)),
+            style: ElevatedButton.styleFrom(
+              minimumSize: const Size(double.infinity, 52),
+            ),
           ),
+        ],
         if (sudahMasuk && !sudahKeluar) ...[
           ElevatedButton.icon(
             onPressed: _isLoadingAbsen ? null : _checkOut,

@@ -174,8 +174,8 @@ class DatabaseHelper {
     final existing = await getPresensiHariIni(userId);
     if (existing != null && existing.jamMasuk != null) return -1;
 
-    // Tentukan status: terlambat jika setelah 08:30
-    final status = jamSekarang.compareTo('08:30') > 0 ? 'terlambat' : 'hadir';
+    // Tentukan status: terlambat jika setelah 08:00
+    final status = jamSekarang.compareTo('08:00') > 0 ? 'terlambat' : 'hadir';
 
     if (existing != null) {
       return await db.update(

@@ -31,20 +31,24 @@ class _KelolaPegawaiState extends State<KelolaPegawai> {
     final emailCtrl = TextEditingController(text: user?.email);
     final passwordCtrl = TextEditingController(text: user?.password);
     final noHpCtrl = TextEditingController(text: user?.noHp);
-    final jabatanCtrl = TextEditingController(text: user?.jabatan);
+    
+    final listJabatan = ['Hair Stylist', 'Makeup Artist', 'Nail Artist', 'Kasir', 'Resepsionis', 'Manajer', 'Terapis', 'Asisten Salon'];
+    String? selectedJabatan = listJabatan.contains(user?.jabatan) ? user?.jabatan : null;
 
     Get.bottomSheet(
-      Container(
-        padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      StatefulBuilder(
+        builder: (context, setModalState) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
               Text(user == null ? 'Tambah Pegawai' : 'Edit Pegawai',
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
@@ -79,11 +83,20 @@ class _KelolaPegawaiState extends State<KelolaPegawai> {
                     prefixIcon: Icon(Icons.phone_outlined)),
               ),
               const SizedBox(height: 12),
-              TextField(
-                controller: jabatanCtrl,
+              DropdownButtonFormField<String>(
+                value: selectedJabatan,
+                items: listJabatan
+                    .map((jabatan) => DropdownMenuItem(value: jabatan, child: Text(jabatan)))
+                    .toList(),
+                onChanged: (val) {
+                  setModalState(() {
+                    selectedJabatan = val;
+                  });
+                },
                 decoration: const InputDecoration(
-                    labelText: 'Jabatan',
-                    prefixIcon: Icon(Icons.work_outline)),
+                  labelText: 'Jabatan',
+                  prefixIcon: Icon(Icons.work_outline),
+                ),
               ),
               const SizedBox(height: 20),
               ElevatedButton(
@@ -103,7 +116,7 @@ class _KelolaPegawaiState extends State<KelolaPegawai> {
                         : passwordCtrl.text.trim(),
                     role: 'pegawai',
                     noHp: noHpCtrl.text.trim(),
-                    jabatan: jabatanCtrl.text.trim(),
+                    jabatan: selectedJabatan ?? '',
                   );
                   if (user == null) {
                     await DatabaseHelper.instance.insertUser(newUser);
@@ -122,7 +135,8 @@ class _KelolaPegawaiState extends State<KelolaPegawai> {
             ],
           ),
         ),
-      ),
+      );
+        }),
       isScrollControlled: true,
     );
   }
